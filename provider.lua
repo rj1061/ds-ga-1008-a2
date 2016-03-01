@@ -31,7 +31,7 @@ function parseDataNoLabel(d, numSamples, numChannels, height, width)
    idx = idx + 1
      end
   end
-  assert(idx == numSampless + 1)
+  assert(idx == numSamples + 1)
   return t_nl
 end
 
