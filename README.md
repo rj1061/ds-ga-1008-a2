@@ -12,6 +12,7 @@ th -i provider.lua
 
 ```lua
 provider = Provider()
+provider.getUnlabelled()
 provider:normalize()
 torch.save('provider.t7',provider)
 ```
