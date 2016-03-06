@@ -86,6 +86,7 @@ optimState = {
 function train()
   model:training()
   epoch = epoch or 1
+  batchSize = opt.batchSize or 1
 
   -- drop learning rate every "epoch_step" epochs
   if epoch % opt.epoch_step == 0 then optimState.learningRate = optimState.learningRate/2 end
@@ -109,6 +110,7 @@ function train()
       gradParameters:zero()
       
       local outputs = model:forward(inputs)
+      print(outputs:nDimension() + "\n")
       local f = criterion:forward(outputs, targets)
       local df_do = criterion:backward(outputs, targets)
       model:backward(inputs, df_do)
@@ -129,7 +131,6 @@ function train()
   confusion:zero()
   epoch = epoch + 1
 end
-
 
 function val()
   -- disable flips, dropouts and batch normalization

@@ -167,7 +167,7 @@ function Provider:normalize()
   valData.data:select(2,3):div(std_v)
 
   -- preprocess extraSet
-  for i=1, extraSata:size() do
+  for i=1, extraData:size() do
     xlua.progreaa(i, extraData:size())
     -- rgb -> yuv
     local rgb = extraData.data[i]
