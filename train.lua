@@ -143,6 +143,7 @@ function train_unlabelled()
 
   local targets = torch.CudaTensor(opt.batchSize)
   local indices = torch.randperm(provider.extraData.data:size(1)):long():split(opt.batchSize)
+
   -- remove last element so that all the batches have equal size
   indices[#indices] = nil
 
@@ -157,7 +158,7 @@ function train_unlabelled()
       gradParameters:zero()
 
       local outputs = model:forward(inputs)
-      for i=1,64 do
+      for i=1,opt.batchSize do
         targets[i] = 1
         for j=1,10 do
           if outputs[i][targets[i]] < outputs[i][j] then targets[i] = j end
@@ -243,11 +244,11 @@ function val()
 end
 
 
-for i=1,opt.max_epoch do
+for i=2,opt.max_epoch+1 do
   if (i-1)%5==0 then
-    train()
-  else
     train_unlabelled()
+  else
+    train()
   end
   val()
 end
