@@ -110,7 +110,6 @@ function train()
       gradParameters:zero()
       
       local outputs = model:forward(inputs)
-      print(outputs:size())
       local f = criterion:forward(outputs, targets)
       local df_do = criterion:backward(outputs, targets)
       model:backward(inputs, df_do)
@@ -142,7 +141,7 @@ function train_unlabelled()
 
   print(c.blue '==>'.." online epoch # " .. epoch .. ' [batchSize = ' .. opt.batchSize .. ']')
 
-  -- local targets = torch.CudaTensor(opt.batchSize)
+  local targets = torch.CudaTensor(opt.batchSize)
   local indices = torch.randperm(provider.extraData.data:size(1)):long():split(opt.batchSize)
   -- remove last element so that all the batches have equal size
   indices[#indices] = nil
@@ -151,20 +150,23 @@ function train_unlabelled()
   for t,v in ipairs(indices) do
     xlua.progress(t, #indices)
 
-    local inputs = provider.trainData.data:index(1,v)
-    -- targets:copy(provider.trainData.labels:index(1,v))
+    local inputs = provider.extraData.data:index(1,v)
 
     local feval = function(x)
       if x ~= parameters then parameters:copy(x) end
       gradParameters:zero()
 
       local outputs = model:forward(inputs)
-      print(outputs:nDimension() + "\n")
-      local f = criterion:forward(outputs, math.ceil(outputs))
-      local df_do = criterion:backward(outputs, math.ceil(outputs))
+      for i=1,64 do
+        targets[i] = 1
+        for j=1,10 do
+          if outputs[i][targets[i]] < outputs[i][j] then targets[i] = j end
+        end
+      end
+      local f = criterion:forward(outputs, targets)
+      local df_do = criterion:backward(outputs, targets)
       model:backward(inputs, df_do)
-
-      confusion:batchAdd(outputs, math.ceil(outputs))
+      confusion:batchAdd(outputs, targets)
 
       return f,gradParameters
     end

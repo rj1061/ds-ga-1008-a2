@@ -178,4 +178,6 @@ function Provider:normalize()
     yuv[{1}] = normalization(yuv[{{1}}])
     extraData.data[i] = yuv
   end
+  extraData.data.select(2,2):add(-mean_u)
+  extraData.data.select(2,3):div(std_v)
 end
