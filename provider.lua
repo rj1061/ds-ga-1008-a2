@@ -108,6 +108,8 @@ function Provider:getUnlabelled()
   extraData.data = parseDataNoLabel(raw_extra.data, 100000, 3, 96, 96)
   -- local extraData = self.extraData
   extraData.data = extraData.data:float()
+
+  self.extraData = extraData
   collectgarbage()
 end
 
@@ -168,18 +170,12 @@ function Provider:normalize()
 
   -- preprocess extraSet
   for i=1, extraData:size() do
-    xlua.progreaa(i, extraData:size())
+    xlua.progress(i, extraData:size())
     -- rgb -> yuv
     local rgb = extraData.data[i]
     local yuv = image.rgb2yuv(rgb)
-    -- normalize y lcally:
+    -- normalize y locally:
     yuv[{1}] = normalization(yuv[{{1}}])
     extraData.data[i] = yuv
   end
-  -- normalize u globally:
-  extraData.data.select(2,2):add(-mean_u)
-  extraData.data:select(2,2):div(std_u)
-  -- normallize y locally:
-  extraData.data:select(2,3):add(-mean_v)
-  extraData.data:select(2,3):div(std_v)
 end
