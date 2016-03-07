@@ -132,6 +132,55 @@ function train()
   epoch = epoch + 1
 end
 
+function train_unlabelled()
+  model:training()
+  epoch = epoch or 1
+  batchSize = opt.batchSize or 1
+
+  -- drop learning rate every "epoch_step" epochs
+  if epoch % opt.epoch_step == 0 then optimState.learningRate = optimState.learningRate/2 end
+
+  print(c.blue '==>'.." online epoch # " .. epoch .. ' [batchSize = ' .. opt.batchSize .. ']')
+
+  -- local targets = torch.CudaTensor(opt.batchSize)
+  local indices = torch.randperm(provider.extraData.data:size(1)):long():split(opt.batchSize)
+  -- remove last element so that all the batches have equal size
+  indices[#indices] = nil
+
+  local tic = torch.tic()
+  for t,v in ipairs(indices) do
+    xlua.progress(t, #indices)
+
+    local inputs = provider.trainData.data:index(1,v)
+    -- targets:copy(provider.trainData.labels:index(1,v))
+
+    local feval = function(x)
+      if x ~= parameters then parameters:copy(x) end
+      gradParameters:zero()
+
+      local outputs = model:forward(inputs)
+      print(outputs:nDimension() + "\n")
+      local f = criterion:forward(outputs, math.ceil(outputs))
+      local df_do = criterion:backward(outputs, math.ceil(outputs))
+      model:backward(inputs, df_do)
+
+      confusion:batchAdd(outputs, math.ceil(outputs))
+
+      return f,gradParameters
+    end
+    optim.sgd(feval, parameters, optimState)
+  end
+
+  confusion:updateValids()
+  print(('Train accuracy: '..c.cyan'%.2f'..' %%\t time: %.2f s'):format(
+        confusion.totalValid * 100, torch.toc(tic)))
+
+  train_acc = confusion.totalValid * 100
+
+  confusion:zero()
+  epoch = epoch + 1
+end
+
 function val()
   -- disable flips, dropouts and batch normalization
   model:evaluate()
@@ -193,7 +242,11 @@ end
 
 
 for i=1,opt.max_epoch do
-  train()
+  if (i-1)%5==0 then
+    train()
+  elseif (i-1)%5!=0 then
+    train_unlabelled()
+  end
   val()
 end
 
