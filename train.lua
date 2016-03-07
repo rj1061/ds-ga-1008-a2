@@ -110,7 +110,7 @@ function train()
       gradParameters:zero()
       
       local outputs = model:forward(inputs)
-      print(outputs:nDimension() + "\n")
+      print(outputs:size())
       local f = criterion:forward(outputs, targets)
       local df_do = criterion:backward(outputs, targets)
       model:backward(inputs, df_do)
@@ -244,7 +244,7 @@ end
 for i=1,opt.max_epoch do
   if (i-1)%5==0 then
     train()
-  elseif (i-1)%5!=0 then
+  else
     train_unlabelled()
   end
   val()
