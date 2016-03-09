@@ -134,15 +134,15 @@ end
 function train_unlabelled()
   model:training()
   epoch = epoch or 1
-  batchSize = opt.batchSize or 1
+  batchSize = 4000
 
   -- drop learning rate every "epoch_step" epochs
-  if epoch % opt.epoch_step == 0 then optimState.learningRate = optimState.learningRate/2 end
+  if epoch % opt.epoch_step == 0 then optimState.learningRate = optimState.learningRate/4 end
 
-  print(c.blue '==>'.." online epoch # " .. epoch .. ' [batchSize = ' .. opt.batchSize .. ']')
+  print(c.blue '==>'.." online epoch # " .. epoch .. ' [batchSize = ' .. batchSize .. ']')
 
-  local targets = torch.CudaTensor(opt.batchSize)
-  local indices = torch.randperm(provider.extraData.data:size(1)):long():split(opt.batchSize)
+  local targets = torch.CudaTensor(batchSize)
+  local indices = torch.randperm(provider.extraData.data:size(1)):long():split(batchSize)
 
   -- remove last element so that all the batches have equal size
   indices[#indices] = nil
@@ -244,8 +244,8 @@ function val()
 end
 
 
-for i=2,opt.max_epoch+1 do
-  if (i-1)%5==0 then
+for i=1,opt.max_epoch do
+  if (i-1)%10==0 then
     train_unlabelled()
   else
     train()
