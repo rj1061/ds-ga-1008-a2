@@ -243,6 +243,61 @@ function val()
   confusion:zero()
 end
 
+function test()
+  -- disable flips, dropouts and batch normalization
+  model:evaluate()
+  print(c.blue '==>'.." valing")
+  local bs = 25
+  for i=1,provider.testData.data:size(1),bs do
+    local outputs = model:forward(provider.testData.data:narrow(1,i,bs))
+    confusion:batchAdd(outputs, provider.testData.labels:narrow(1,i,bs))
+  end
+  confusion:updateValids()
+  print('test accuracy:', confusion.totalValid * 100)
+  if valLogger then
+    paths.mkdir(opt.save)
+    valLogger:add{train_acc, val_acc,confusion.totalValid * 100}
+    valLogger:style{'-','-','-'}
+    valLogger:plot()
+    
+    local base64im
+    do
+      os.execute(('convert -density 200 %s/val.log.eps %s/val.png'):format(opt.save,opt.save))
+      os.execute(('openssl base64 -in %s/val.png -out %s/val.base64'):format(opt.save,opt.save))
+      local f = io.open(opt.save..'/val.base64') 
+      if f then base64im = f:read'*all' end
+    end
+    
+    local file = io.open(opt.save..'/report.html','w')
+    file:write(([[
+    <!DOCTYPE html>
+    <html>
+    <body>
+    <title>%s - %s</title>
+    <img src="data:image/png;base64,%s">
+    <h4>optimState:</h4>
+    <table>
+    ]]):format(opt.save,epoch,base64im))
+    for k,v in pairs(optimState) do
+      if torch.type(v) == 'number' then
+        file:write('<tr><td>'..k..'</td><td>'..v..'</td></tr>\n')
+      end
+    end
+    file:write'</table><pre>\n'
+    file:write(tostring(confusion)..'\n')
+    file:write(tostring(model)..'\n')
+    file:write'</pre></body></html>'
+    file:close()
+  end
+  
+  -- save model every 50 epochs
+  if epoch % 5 == 0 then 
+    local filename = paths.concat(opt.save, 'model.net')
+    print('==> saving model to '..filename) 
+    torch.save(filename, model:get(3))
+  end
+  confusion:zero()
+end
 
 for i=1,opt.max_epoch do
   if (i-1)%10==0 then
@@ -251,6 +306,7 @@ for i=1,opt.max_epoch do
     train()
   end
   val()
+  test()
 end
 
 
